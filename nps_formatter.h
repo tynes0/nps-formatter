@@ -2,15 +2,17 @@
 
 #include <string>
 #include <sstream>
+#include <vector>
+#include <algorithm>
 #include <iomanip>
 
 namespace nps
 {
-  class formatter
+	class formatter
 	{
 	public:
 		template <typename... Args>
-		VTL_NODISCARD static std::string format(const std::string& fmt, Args&&... args)
+		[[nodiscard]] static std::string format(const std::string& fmt, Args&&... args)
 		{
 			if (sizeof...(args) == 0)
 			{
@@ -85,13 +87,13 @@ namespace nps
 			_Ty m_argument;
 		};
 
-		class argument_array : public vector<argument_base*>
+		class argument_array : public std::vector<argument_base*>
 		{
 		public:
 			argument_array() {}
 			~argument_array()
 			{
-				for_each(begin(), end(), [](argument_base* arg_ptr)->void { delete arg_ptr; });
+				std::for_each(begin(), end(), [](argument_base* arg_ptr)->void { delete arg_ptr; });
 			}
 		};
 
