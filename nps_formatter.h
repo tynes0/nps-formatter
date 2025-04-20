@@ -5,6 +5,7 @@
 #include <vector>
 #include <algorithm>
 #include <iomanip>
+#include <bitset>
 
 namespace nps
 {
@@ -78,14 +79,94 @@ namespace nps
 
 			virtual ~argument() override {}
 
-			virtual void format(std::ostringstream& oss, const std::string& fmt)
+			virtual void format(std::ostringstream& oss, const std::string& fmt) override
 			{
-				oss << m_argument;
+				if constexpr (std::is_same_v<_Ty, bool>)
+				{
+					if (fmt == "boolalpha" || fmt == "ba")
+					{
+						oss << std::boolalpha << m_argument;
+					}
+				}
+				if constexpr (std::is_arithmetic<_Ty>::value)
+				{
+					if (fmt == "scientific" || fmt == "sci" || fmt == "e")
+					{
+						oss << std::scientific << m_argument;
+					}
+					else if (fmt == "E")
+					{
+						std::ostringstream tmp;
+						tmp << std::scientific << m_argument;
+						std::string str = tmp.str();
+						std::replace(str.begin(), str.end(), 'e', 'E');
+						oss << str;
+					}
+					else if constexpr (std::is_integral<_Ty>::value)
+					{
+						if (fmt == "x")
+						{
+							oss << std::hex << std::nouppercase << m_argument;
+						}
+						else if (fmt == "X")
+						{
+							oss << std::hex << std::uppercase << m_argument;
+						}
+						else if (fmt == "b")
+						{
+							oss << to_binary(static_cast<unsigned long long>(m_argument));
+						}
+						else if (fmt == "o")
+						{
+							oss << std::oct << m_argument;
+						}
+						else
+						{
+							oss << m_argument; // default decimal
+						}
+					}
+					else if constexpr (std::is_floating_point<_Ty>::value)
+					{
+						if (!fmt.empty() && fmt[0] == '.')
+						{
+							int precision = std::stoi(fmt.substr(1, fmt.size() - 2)); // e.g., .2f
+							oss << std::fixed << std::setprecision(precision) << m_argument;
+						}
+						else
+						{
+							oss << m_argument;
+						}
+					}
+				}
+				else
+				{
+					oss << m_argument; // fallback for other types
+				}
 			}
 
 		private:
 			_Ty m_argument;
+
+			std::string to_binary(unsigned long long value)
+			{
+				if (value == 0)
+					return "0b0";
+
+				std::string result;
+				while (value > 0)
+				{
+					result.insert(result.begin(), (value & 1) ? '1' : '0');
+					value >>= 1;
+				}
+
+				while (result.length() % 4 != 0)
+					result.insert(result.begin(), '0');
+
+				return result;
+			}
+
 		};
+
 
 		class argument_array : public std::vector<argument_base*>
 		{
